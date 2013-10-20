@@ -29,6 +29,7 @@ public class GcTetris extends Game.Default {
 
 	@Override
 	public void init() {
+		// Hola, como te va?
 		// create and add background image layer
 		Image bgImage = assets().getImage("images/bg.png");
 		ImageLayer bgLayer = graphics().createImageLayer(bgImage);
