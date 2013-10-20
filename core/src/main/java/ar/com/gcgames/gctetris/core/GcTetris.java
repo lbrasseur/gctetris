@@ -22,6 +22,10 @@ public class GcTetris extends Game.Default {
 	private Token token;
 	private int xOffset = 0;
 	private boolean rotating;
+	private boolean firstTokenUpdate = true;
+	private boolean acceleratedFall;
+	private int fallMiliseconds = 1000;
+	private int fallMilisecondsCounter = 0;
 
 	public GcTetris() {
 		super(33); // call update every 33ms (30 times per second)
@@ -38,7 +42,8 @@ public class GcTetris extends Game.Default {
 		blockImage = assets().getImage("images/block.jpg");
 
 		scenario = new Scenario(10, 20);
-		token = new Token();
+
+		startNewToken();
 
 		initKeyboard();
 	}
@@ -49,6 +54,16 @@ public class GcTetris extends Game.Default {
 			token.rotate();
 		}
 		token.moveX(xOffset);
+
+		if (!firstTokenUpdate) {
+			fallMilisecondsCounter += delta;
+			if (acceleratedFall || fallMilisecondsCounter > fallMiliseconds) {
+				token.moveDown();
+				fallMilisecondsCounter -= fallMiliseconds;
+			}
+		} else {
+			firstTokenUpdate = false;
+		}
 	}
 
 	@Override
@@ -58,11 +73,11 @@ public class GcTetris extends Game.Default {
 
 	private void initKeyboard() {
 		keyboard().setListener(new Keyboard.Listener() {
-
 			@Override
 			public void onKeyUp(Event event) {
 				xOffset = 0;
 				rotating = false;
+				acceleratedFall = false;
 			}
 
 			@Override
@@ -77,9 +92,31 @@ public class GcTetris extends Game.Default {
 					xOffset = 1;
 				} else if (event.key().equals(Key.UP)) {
 					rotating = true;
+				} else if (event.key().equals(Key.DOWN)) {
+					acceleratedFall = true;
 				}
 			}
 		});
+	}
+
+	private void startNewToken() {
+		token = new Token();
+		firstTokenUpdate = true;
+		fallMiliseconds -= 10;
+		fallMilisecondsCounter = 0;
+	}
+
+	private void fixToken() {
+		for (int column = 0; column < token.getWidth(); column++) {
+			for (int row = 0; row < token.getHeight(); row++) {
+				ImageLayer part = token.getParts()[column][row];
+				if (part != null) {
+					scenario.getParts()[token.getX() + column][token.getY()
+							+ row] = part;
+				}
+			}
+		}
+		startNewToken();
 	}
 
 	private class Scenario {
@@ -113,10 +150,13 @@ public class GcTetris extends Game.Default {
 		public int getHeight() {
 			return height;
 		}
+
+		public ImageLayer[][] getParts() {
+			return parts;
+		}
 	}
 
 	private class Token {
-		private final static int PARTS_SIZE = 4;
 		private ImageLayer[][] parts;
 		private int x;
 		private int y;
@@ -125,6 +165,26 @@ public class GcTetris extends Game.Default {
 
 		public Token() {
 			createL();
+
+			switch ((int) (Math.random() * 6)) {
+			case 0:
+				createL();
+				break;
+			case 1:
+				createI();
+				break;
+			case 2:
+				createT();
+				break;
+			case 3:
+				createS();
+				break;
+			case 4:
+				createZ();
+				break;
+			default:
+				createO();
+			}
 
 			for (ImageLayer[] partRow : parts) {
 				for (ImageLayer part : partRow) {
@@ -143,6 +203,64 @@ public class GcTetris extends Game.Default {
 			createBlock(0, 1);
 			createBlock(0, 2);
 			createBlock(1, 2);
+		}
+
+		private void createI() {
+			width = 1;
+			height = 4;
+			parts = new ImageLayer[width][height];
+			createBlock(0, 0);
+			createBlock(0, 1);
+			createBlock(0, 2);
+			createBlock(0, 3);
+		}
+
+		private void createT() {
+			width = 3;
+			height = 2;
+			parts = new ImageLayer[width][height];
+			createBlock(1, 0);
+			createBlock(0, 1);
+			createBlock(1, 1);
+			createBlock(2, 1);
+		}
+
+		private void createS() {
+			width = 3;
+			height = 2;
+			parts = new ImageLayer[width][height];
+			createBlock(1, 0);
+			createBlock(2, 0);
+			createBlock(0, 1);
+			createBlock(1, 1);
+		}
+
+		private void createZ() {
+			width = 3;
+			height = 2;
+			parts = new ImageLayer[width][height];
+			createBlock(0, 0);
+			createBlock(1, 0);
+			createBlock(1, 1);
+			createBlock(2, 1);
+		}
+
+		private void createO() {
+			width = 2;
+			height = 2;
+			parts = new ImageLayer[width][height];
+			createBlock(0, 0);
+			createBlock(1, 0);
+			createBlock(0, 1);
+			createBlock(1, 1);
+		}
+
+		public void moveDown() {
+			if (y + height < scenario.getHeight()) {
+				y++;
+			} else {
+				fixToken();
+			}
 		}
 
 		private void paint() {
@@ -178,7 +296,7 @@ public class GcTetris extends Game.Default {
 				for (int row = 0; row < height; row++) {
 					ImageLayer part = parts[column][row];
 					if (part != null) {
-						newParts[row][newHeight - 1 -column] = parts[column][row];
+						newParts[row][newHeight - 1 - column] = parts[column][row];
 					}
 				}
 			}
@@ -186,6 +304,31 @@ public class GcTetris extends Game.Default {
 			width = newWidth;
 			height = newHeight;
 			parts = newParts;
+
+			int widthExcess = scenario.getWidth() - (x + newWidth);
+			if (widthExcess < 0) {
+				moveX(widthExcess);
+			}
+		}
+
+		public ImageLayer[][] getParts() {
+			return parts;
+		}
+
+		public int getX() {
+			return x;
+		}
+
+		public int getY() {
+			return y;
+		}
+
+		public int getWidth() {
+			return width;
+		}
+
+		public int getHeight() {
+			return height;
 		}
 	}
 }
