@@ -18,6 +18,8 @@ public class GcTetris extends Game.Default {
 	private final static int SCENARIO_X = 25;
 	private final static int SCENARIO_Y = 10;
 	private Image blockImage;
+	private Image blockImageRed;
+	private Image blockImageyellow;
 	private Scenario scenario;
 	private Token token;
 	private int xOffset = 0;
@@ -33,14 +35,14 @@ public class GcTetris extends Game.Default {
 
 	@Override
 	public void init() {
-		// Hola, como te va?
 		// create and add background image layer
 		Image bgImage = assets().getImage("images/bg.png");
 		ImageLayer bgLayer = graphics().createImageLayer(bgImage);
 		graphics().rootLayer().add(bgLayer);
 
 		blockImage = assets().getImage("images/block.jpg");
-
+		blockImageRed = assets().getImage("images/block2.jpg");
+		blockImageyellow = assets().getImage("images/block3.jpg");
 		scenario = new Scenario(10, 20);
 
 		startNewToken();
@@ -50,6 +52,7 @@ public class GcTetris extends Game.Default {
 
 	@Override
 	public void update(int delta) {
+		if (token!=null) {
 		if (rotating) {
 			token.rotate();
 		}
@@ -64,11 +67,15 @@ public class GcTetris extends Game.Default {
 		} else {
 			firstTokenUpdate = false;
 		}
+		}
 	}
 
 	@Override
 	public void paint(float alpha) {
+		if (token!=null) {
 		token.paint();
+		scenario.paint();
+		}
 	}
 
 	private void initKeyboard() {
@@ -107,16 +114,23 @@ public class GcTetris extends Game.Default {
 	}
 
 	private void fixToken() {
-		for (int column = 0; column < token.getWidth(); column++) {
-			for (int row = 0; row < token.getHeight(); row++) {
-				ImageLayer part = token.getParts()[column][row];
-				if (part != null) {
-					scenario.getParts()[token.getX() + column][token.getY()
-							+ row] = part;
+		if (token.getY() == 0) {
+			token = null;
+scenario.showLooser();
+		} else {
+			for (int column = 0; column < token.getWidth(); column++) {
+				for (int row = 0; row < token.getHeight(); row++) {
+					ImageLayer part = token.getParts()[column][row];
+					if (part != null) {
+						scenario.getParts()[token.getX() + column][token.getY()
+								+ row] = part;
+					}
 				}
 			}
+
+			scenario.deleteFullRows();
+			startNewToken();
 		}
-		startNewToken();
 	}
 
 	private class Scenario {
@@ -143,6 +157,61 @@ public class GcTetris extends Game.Default {
 			parts = new ImageLayer[width][height];
 		}
 
+		public void showLooser() {
+			Image looserImage = assets().getImage("images/looser.jpg");
+			ImageLayer looserLayer = graphics().createImageLayer(looserImage);
+			looserLayer.setTranslation(
+					SCENARIO_X + (width - looserImage.width()) / 2, SCENARIO_Y
+							+ (height - looserImage.height()) / 2);
+			graphics().rootLayer().add(looserLayer);
+		}
+
+		public void paint() {
+			for (int column = 0; column < width; column++) {
+				for (int row = 0; row < height; row++) {
+					ImageLayer part = parts[column][row];
+					if (part != null) {
+						part.setTranslation(SCENARIO_X + column
+								* BLOCK_SIZE, SCENARIO_Y + row
+								* BLOCK_SIZE);
+					}
+				}
+			}
+		}
+
+		public void deleteFullRows() {
+			for (int y = token.getY();y<token.getY()+token.getHeight();y++) {
+				boolean full = true;
+				for (int x=0;x<width;x++) {
+					if (parts[x][y]== null) {
+						full = false;
+						break;
+					}
+				}
+				if (full) {
+					deleteRow(y);
+				}
+			}
+		}
+
+		private void deleteRow(int rowToDelete) {
+			for (int x=0;x<width;x++) {
+				ImageLayer part = parts[x][rowToDelete];
+				if (part!=null) {
+					part.destroy();
+				}
+			}
+			for (int y = rowToDelete; y>0;y--){
+				for (int x=0;x<width;x++) {
+					parts[x][y] = parts[x][y - 1];
+				}
+			}
+			
+			for (int x=0;x<width;x++) {
+				parts[x][0] = null;
+			}
+		}
+
 		public int getWidth() {
 			return width;
 		}
@@ -164,28 +233,30 @@ public class GcTetris extends Game.Default {
 		private int height;
 
 		public Token() {
-			createL();
+			int color = (int) (Math.random() * 3);
+			int tokenType = (int) (Math.random() * 6);
 
-			switch ((int) (Math.random() * 6)) {
+			switch (tokenType) {
 			case 0:
-				createL();
+				createL(color);
 				break;
 			case 1:
-				createI();
+				createI(color);
 				break;
 			case 2:
-				createT();
+				createT(color);
 				break;
 			case 3:
-				createS();
+				createS(color);
 				break;
 			case 4:
-				createZ();
+				createZ(color);
 				break;
 			default:
-				createO();
+				createO(color);
 			}
 
+			x = (scenario.getWidth() - width) / 2;
 			for (ImageLayer[] partRow : parts) {
 				for (ImageLayer part : partRow) {
 					if (part != null) {
@@ -195,72 +266,64 @@ public class GcTetris extends Game.Default {
 			}
 		}
 
-		private void createL() {
+		private void createL(int color) {
 			width = 2;
 			height = 3;
 			parts = new ImageLayer[width][height];
-			createBlock(0, 0);
-			createBlock(0, 1);
-			createBlock(0, 2);
-			createBlock(1, 2);
+			createBlock(0, 0, color);
+			createBlock(0, 1, color);
+			createBlock(0, 2, color);
+			createBlock(1, 2, color);
 		}
 
-		private void createI() {
+		private void createI(int color) {
 			width = 1;
 			height = 4;
 			parts = new ImageLayer[width][height];
-			createBlock(0, 0);
-			createBlock(0, 1);
-			createBlock(0, 2);
-			createBlock(0, 3);
+			createBlock(0, 0, color);
+			createBlock(0, 1, color);
+			createBlock(0, 2, color);
+			createBlock(0, 3, color);
 		}
 
-		private void createT() {
+		private void createT(int color) {
 			width = 3;
 			height = 2;
 			parts = new ImageLayer[width][height];
-			createBlock(1, 0);
-			createBlock(0, 1);
-			createBlock(1, 1);
-			createBlock(2, 1);
+			createBlock(1, 0, color);
+			createBlock(0, 1, color);
+			createBlock(1, 1, color);
+			createBlock(2, 1, color);
 		}
 
-		private void createS() {
+		private void createS(int color) {
 			width = 3;
 			height = 2;
 			parts = new ImageLayer[width][height];
-			createBlock(1, 0);
-			createBlock(2, 0);
-			createBlock(0, 1);
-			createBlock(1, 1);
+			createBlock(1, 0, color);
+			createBlock(2, 0, color);
+			createBlock(0, 1, color);
+			createBlock(1, 1, color);
 		}
 
-		private void createZ() {
+		private void createZ(int color) {
 			width = 3;
 			height = 2;
 			parts = new ImageLayer[width][height];
-			createBlock(0, 0);
-			createBlock(1, 0);
-			createBlock(1, 1);
-			createBlock(2, 1);
+			createBlock(0, 0, color);
+			createBlock(1, 0, color);
+			createBlock(1, 1, color);
+			createBlock(2, 1, color);
 		}
 
-		private void createO() {
+		private void createO(int color) {
 			width = 2;
 			height = 2;
 			parts = new ImageLayer[width][height];
-			createBlock(0, 0);
-			createBlock(1, 0);
-			createBlock(0, 1);
-			createBlock(1, 1);
-		}
-
-		public void moveDown() {
-			if (y + height < scenario.getHeight()) {
-				y++;
-			} else {
-				fixToken();
-			}
+			createBlock(0, 0, color);
+			createBlock(1, 0, color);
+			createBlock(0, 1, color);
+			createBlock(1, 1, color);
 		}
 
 		private void paint() {
@@ -276,14 +339,54 @@ public class GcTetris extends Game.Default {
 			}
 		}
 
-		private void createBlock(int x, int y) {
-			parts[x][y] = graphics().createImageLayer(blockImage);
+		private void createBlock(int x, int y, int color) {
+			switch (color) {
+			case 0:
+				parts[x][y] = graphics().createImageLayer(blockImage);
+				break;
+			case 1:
+				parts[x][y] = graphics().createImageLayer(blockImageRed);
+				break;
+			case 2:
+				parts[x][y] = graphics().createImageLayer(blockImageyellow);
+				break;
+			}
+			// parts[x][y] = graphics().createImageLayer(blockImage);
+		}
+
+		public void moveDown() {
+			if (canMove(0, 1)) {
+				y++;
+			} else {
+				fixToken();
+			}
 		}
 
 		public void moveX(int offset) {
-			int newX = x + offset;
-			if (newX >= 0 && newX + width <= scenario.getWidth()) {
-				x = newX;
+			if (canMove(offset, 0)) {
+				x += offset;
+			}
+		}
+
+		private boolean canMove(int xOffset, int yOffset) {
+			int newX = x + xOffset;
+			int newY = y + yOffset;
+			if (newY + height > scenario.getHeight() || newX < 0
+					|| newX + width > scenario.getWidth()) {
+				return false;
+			} else {
+				for (int column = 0; column < width; column++) {
+					for (int row = 0; row < height; row++) {
+						ImageLayer part = parts[column][row];
+						ImageLayer scenarioPart = scenario.getParts()[newX
+								+ column][newY + row];
+						if (part != null && scenarioPart != null) {
+							return false;
+						}
+					}
+				}
+
+				return true;
 			}
 		}
 
