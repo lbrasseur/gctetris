@@ -3,6 +3,8 @@ package ar.com.gcgames.gctetris.core;
 import static playn.core.PlayN.assets;
 import static playn.core.PlayN.graphics;
 import static playn.core.PlayN.keyboard;
+
+
 import playn.core.Canvas;
 import playn.core.CanvasImage;
 import playn.core.Game;
@@ -13,6 +15,7 @@ import playn.core.Keyboard;
 import playn.core.Keyboard.Event;
 import playn.core.Keyboard.TypedEvent;
 
+import javax.swing.*;
 public class GcTetris extends Game.Default {
 	private final static int BLOCK_SIZE = 16;
 	private final static int SCENARIO_X = 25;
@@ -28,6 +31,8 @@ public class GcTetris extends Game.Default {
 	private boolean acceleratedFall;
 	private int fallMiliseconds = 1000;
 	private int fallMilisecondsCounter = 0;
+	
+	
 
 	public GcTetris() {
 		super(33); // call update every 33ms (30 times per second)
@@ -44,7 +49,7 @@ public class GcTetris extends Game.Default {
 		blockImageRed = assets().getImage("images/block2.jpg");
 		blockImageyellow = assets().getImage("images/block3.jpg");
 		scenario = new Scenario(10, 20);
-
+		
 		startNewToken();
 
 		initKeyboard();
@@ -133,6 +138,7 @@ scenario.showLooser();
 		}
 	}
 
+	
 	private class Scenario {
 		private ImageLayer[][] parts;
 		private int width;
@@ -224,7 +230,8 @@ scenario.showLooser();
 			return parts;
 		}
 	}
-
+		
+		
 	private class Token {
 		private ImageLayer[][] parts;
 		private int x;
@@ -234,7 +241,7 @@ scenario.showLooser();
 
 		public Token() {
 			int color = (int) (Math.random() * 3);
-			int tokenType = (int) (Math.random() * 6);
+			int tokenType = (int) (Math.random() * 7);
 
 			switch (tokenType) {
 			case 0:
@@ -252,6 +259,12 @@ scenario.showLooser();
 			case 4:
 				createZ(color);
 				break;
+			case 5:
+				createCruz(color);
+				break;
+			case 6:
+				createL_inverza(color);
+				break;
 			default:
 				createO(color);
 			}
@@ -266,6 +279,15 @@ scenario.showLooser();
 			}
 		}
 
+		private void createL_inverza(int color){
+			width = 2;
+			height = 3;
+			parts = new ImageLayer[width][height];
+			createBlock(1, 0, color);
+			createBlock(1, 1, color);
+			createBlock(1, 2, color);
+			createBlock(0, 2, color);
+		}
 		private void createL(int color) {
 			width = 2;
 			height = 3;
@@ -305,7 +327,17 @@ scenario.showLooser();
 			createBlock(0, 1, color);
 			createBlock(1, 1, color);
 		}
-
+		
+		private void createCruz (int color){
+			width = 3;
+			height = 3;
+			parts = new ImageLayer[width][height];
+			createBlock(0, 1, color);
+			createBlock(1, 0, color);
+			createBlock(1, 1, color);
+			createBlock(2, 1, color);
+			createBlock(1, 2, color);
+		}
 		private void createZ(int color) {
 			width = 3;
 			height = 2;
@@ -435,3 +467,6 @@ scenario.showLooser();
 		}
 	}
 }
+
+
+
